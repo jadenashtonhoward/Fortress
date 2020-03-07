@@ -5,8 +5,7 @@ words = open("words.txt", "r").readlines()
 words = [word.replace("\n", "_")for word in words]
 
 for i in range(0,4):
-    word = choice(words)
-    usable = True
+    usable = False
     while usable != True:
         word = choice(words)
         if len(word) < 8:
