@@ -1,4 +1,5 @@
 from random import choice
+from os.path import isfile
 
 def createPassword():
     password = ""
@@ -19,7 +20,33 @@ def createPassword():
 
     password = password[:-1]
 
-    print(password)
+    return(password)
 
 
-createPassword()
+def createCredentials():
+    site = input("What site do you need a password for? ")
+    sitePassword = createPassword()
+    if isfile(site.lower() + "File.txt"):
+        print(f"You already have credentials for {site}")
+    else:
+        siteFile = open(site.lower() + "File.txt", "w+")
+        siteFile.write(f"Website/Application: \n{site} \nPassword: \n{sitePassword}")
+        siteFile.close()
+
+
+def getCredentials():
+    site = input("Which site do you need credentials for? ")
+    if isfile(site.lower() + "File.txt"):
+        siteFile = open(site + "File.txt", "r")
+    else:
+        print(f"You don't have any credentials stored for {site}")
+
+
+def useApp():
+    userInput = input("Would you like to MAKE or GET credentials? ")
+    if userInput.upper() == "MAKE":
+        createCredentials()
+    elif userInput.upper() == "GET":
+        getCredentials()
+    else:
+        print("Please input either MAKE or GET")
