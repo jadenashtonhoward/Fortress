@@ -30,7 +30,7 @@ def createCredentials():
         print(f"You already have credentials for {site}")
     else:
         siteFile = open(site.lower() + "File.txt", "w+")
-        siteFile.write(f"Website/Application: \n{site} \nPassword: \n{sitePassword}")
+        siteFile.write(f"{site} \n{sitePassword}")
         siteFile.close()
 
 
@@ -38,6 +38,8 @@ def getCredentials():
     site = input("Which site do you need credentials for? ")
     if isfile(site.lower() + "File.txt"):
         siteFile = open(site + "File.txt", "r")
+        # TODO add functionality for retrieving credentials
+        siteFile.close()
     else:
         print(f"You don't have any credentials stored for {site}")
 
@@ -50,3 +52,6 @@ def useApp():
         getCredentials()
     else:
         print("Please input either MAKE or GET")
+
+
+useApp()
