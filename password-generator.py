@@ -24,22 +24,23 @@ def createPassword():
 
 
 def createCredentials():
-    site = input("What site do you need a password for? ")
+    site = input("What site do you need a password for? ").lower()
     sitePassword = createPassword()
-    if isfile(site.lower() + "File.txt"):
+    if isfile(site + "File.txt"):
         print(f"You already have credentials for {site}")
     else:
-        siteFile = open(site.lower() + "File.txt", "w+")
+        siteFile = open(site + "File.txt", "w+")
         siteFile.write(f"{site} \n{sitePassword}")
         siteFile.close()
 
 
 def getCredentials():
-    site = input("Which site do you need credentials for? ")
-    if isfile(site.lower() + "File.txt"):
+    site = input("Which site/application do you need credentials for? ").lower()
+    if isfile(site + "File.txt"):
         siteFile = open(site + "File.txt", "r")
-        # TODO add functionality for retrieving credentials
-        siteFile.close()
+        siteFile = [item.replace("\n", "")for item in siteFile]
+        password = siteFile[1]
+        print(f"Site/Application: {site} \nPassword: {password}")
     else:
         print(f"You don't have any credentials stored for {site}")
 
