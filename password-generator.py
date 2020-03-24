@@ -1,3 +1,4 @@
+import tkinter
 from random import choice
 from os.path import isfile
 
@@ -45,14 +46,7 @@ def getCredentials():
         print(f"You don't have any credentials stored for {site}")
 
 
-def useApp():
-    userInput = input("Would you like to MAKE or GET credentials? ")
-    if userInput.upper() == "MAKE":
-        createCredentials()
-    elif userInput.upper() == "GET":
-        getCredentials()
-    else:
-        print("Please input either MAKE or GET")
 
+top = tkinter.Tk()
 
-useApp()
+top.mainloop()
