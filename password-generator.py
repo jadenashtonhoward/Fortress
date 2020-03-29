@@ -1,15 +1,16 @@
-import tkinter
+from tkinter import *
 from random import choice
 from os.path import isfile
+
 
 def createPassword():
     password = ""
     words = open("words.txt", "r").readlines()
     words = [word.replace("\n", "_")for word in words]
 
-    for i in range(0,6):
+    for i in range(0, 6):
         usable = False
-        while usable != True:
+        while not usable:
             word = choice(words)
             if len(word) < 5:
                 usable = False
@@ -25,7 +26,7 @@ def createPassword():
 
 
 def createCredentials():
-    site = input("What site do you need a password for? ").lower()
+    site = input("What site is this for? ").lower()
     sitePassword = createPassword()
     if isfile(site + "File.txt"):
         print(f"You already have credentials for {site}")
@@ -36,7 +37,7 @@ def createCredentials():
 
 
 def getCredentials():
-    site = input("Which site/application do you need credentials for? ").lower()
+    site = input("Which application do you need credentials for? ").lower()
     if isfile(site + "File.txt"):
         siteFile = open(site + "File.txt", "r")
         siteFile = [item.replace("\n", "")for item in siteFile]
@@ -45,8 +46,24 @@ def getCredentials():
     else:
         print(f"You don't have any credentials stored for {site}")
 
+# Setup for the GUI
+root = Tk()
+root.title("Password Manager")
+root.geometry("1000x500")
+
+class Application(Frame):
+    # An interactive password manager
+    def __init__(self, master):
+        # Initialize the app's frame
+        super(Application, self).__init__(master)
+        self.grid()
+        self.create_widgets()
+app = Frame(root)
+app.grid()
+lbl = Label(app, text = "Password Manager")
+lbl.grid()
+getCredentialsBtn = Button(app, text = "Get Credentials")
+getCredentialsBtn.grid()
 
 
-top = tkinter.Tk()
-
-top.mainloop()
+root.mainloop()
