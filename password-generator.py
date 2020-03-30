@@ -2,6 +2,31 @@ from tkinter import *
 from random import choice
 from os.path import isfile
 
+# Setup for the GUI
+root = Tk()
+root.title("Password Manager")
+root.geometry("1000x500")
+
+class Application(Frame):
+    # An interactive password manager
+    def __init__(self, master):
+        # Initialize the app's frame
+        super(Application, self).__init__(master)
+        self.grid()
+        self.create_widgets()
+
+    # Creates the buttons
+    def create_widgets(self):
+        self.getCredentialsBtn = Button(self, text = "Get Credentials")
+        self.getCredentialsBtn.grid()
+        self.createCredentialsBtn = Button(self, text = "Create Credentials")
+        self.createCredentialsBtn.grid()
+        self.websiteLabel = Label(self)
+        self.websiteLabel.grid()
+        self.passwordLabel = Label(self)
+
+
+app = Application(root)
 
 def createPassword():
     password = ""
@@ -45,25 +70,6 @@ def getCredentials():
         print(f"Site/Application: {site} \nPassword: {password}")
     else:
         print(f"You don't have any credentials stored for {site}")
-
-# Setup for the GUI
-root = Tk()
-root.title("Password Manager")
-root.geometry("1000x500")
-
-class Application(Frame):
-    # An interactive password manager
-    def __init__(self, master):
-        # Initialize the app's frame
-        super(Application, self).__init__(master)
-        self.grid()
-        self.create_widgets()
-app = Frame(root)
-app.grid()
-lbl = Label(app, text = "Password Manager")
-lbl.grid()
-getCredentialsBtn = Button(app, text = "Get Credentials")
-getCredentialsBtn.grid()
 
 
 root.mainloop()
