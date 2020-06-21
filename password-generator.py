@@ -15,7 +15,6 @@ def createPassword():
 
             word = choice(words)
             if len(word) < 5:
-
                 usable = False
                 words.remove(word)
 
@@ -33,14 +32,13 @@ def createPassword():
 def createCredentials():
 
     site = input("Site/Application Name: ").upper()
-    sitePassword = createPassword()
 
     if isfile(site + "_File.txt"):
-
         print(f"You already have credentials for {site}, GET them instead")
 
     else:
-        siteFile = open(site + "File.txt", "w+")
+        sitePassword = createPassword()
+        siteFile = open(site + "_File.txt", "w+")
         siteFile.write(f"{site} \n{sitePassword}")
         siteFile.close()
         print(f"The password that was created is {sitePassword}")
@@ -51,7 +49,6 @@ def getCredentials():
     site = input("Site/Application Name: ").upper()
 
     if isfile(site + "_File.txt"):
-
         siteFile = open(site + "_File.txt", "r")
         siteFile = [item.replace("\n", "") for item in siteFile]
         password = siteFile[1]
@@ -70,20 +67,13 @@ def useApp():
         task = input("CREATE, GET, or CLOSE? ").upper()
 
         if task == "CREATE":
-
             createCredentials()
-
         elif task == "GET":
-
             getCredentials()
-
         elif task == "CLOSE":
-
             using = False
-
         else:
-
-            print("That operation is not supported by this application, please use either GET or CREATE")
+            print("That operation is not supported by this application, please use either GET, CREATE, or CLOSE")
 
 
 useApp()
