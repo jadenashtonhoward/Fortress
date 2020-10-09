@@ -3,6 +3,7 @@ from os.path import isfile
 
 def createPassword():
 
+    # initializes the password and creates a list of words from all of the words in words.txt
     password = ""
     words = open("words.txt", "r").readlines()
     words = [word.replace("\n", "_") for word in words]
