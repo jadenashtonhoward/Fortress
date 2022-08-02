@@ -1,28 +1,34 @@
-import hashlib
 import database as db
 
 from sys import exit
 from generator import generate
 from auth import signup, signin
 
-pass_hash = hashlib.sha3_256("Password".encode("utf-8")).hexdigest() # code to hash passwords
 
 def menu(message: str, *options: str) -> str:
     while True:    
         print(message)
         print("Here are your options:")
+        
         for i in range(0, len(options)):
             print(f"    {options[i]}")
+        
+        print("     Exit")
             
         option = input("Please select an operation. >> ")
         
-        if option in options:
+        if option == "Exit":
+            exit()
+        elif option in options:
+            print()
             return option
         
         print("Please select a valid operation! Capitalization matters.\n")
     
     
 def main():
+    authenticated = False
+    user = ""
 
     print("""
     d88888b  .d88b.  d8888b. d888888b d8888b. d88888b .d8888. .d8888. 
@@ -34,25 +40,31 @@ def main():
           """)
     
     print("")
-
-    option = menu("Welcome to Fortress!", "Sign In", "Sign Up")
     
-    if option == "Sign In":
-        signin()
-    elif option == "Sign Up":
-        signup()
+    while not authenticated:
+        option = menu("Welcome to Fortress!", "Sign In", "Sign Up")
         
-    option = menu("Welcome to your fort!", "Fetch", "Add", "Update", "Delete")
+        if option == "Sign In":
+            authenticated, user = signin()
+        elif option == "Sign Up":
+            authenticated, user = signup()
+        
+    option = menu("Welcome to your fort!", "Add", "Fetch", "Update", "Delete")
     
     # TODO: add arguments and capture return values
-    if option == "Fetch":
-        db.get_credentials()
-    elif option == "Add":
-        db.add_credentials()
+    if option == "Add":
+        cred_name = input("What is this credential for? >> ")
+        cred_username = input("What is your username for this credential? >> ")
+        password_length = int(input("How long would you like your password to be? >> ")) # TODO: error checking
+        cred_password = generate(password_length)
+        print(f"Your generated password: {cred_password}")
+        db.add_credentials(user, cred_name, cred_username, cred_password) # TODO: encrypt password
+    elif option == "Fetch":
+        print(db.get_credentials(user))
     elif option == "Update":
-        db.update_credentials()
+        db.update_credentials(user, str)
     elif option == "Delete":
-        db.delete_credentials()
+        db.delete_credentials(user, str)
 
 if __name__ == "__main__":
     main()

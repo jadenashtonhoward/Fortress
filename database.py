@@ -1,84 +1,63 @@
-# TODO: encrypt passwords
-
 import sqlalchemy as sa
 
-engine = sa.create_engine("sqlite+pysqlite:///:memory", echo=True, future=True)
+engine = sa.create_engine("sqlite+pysqlite:///:memory", future=True)
 
-metadata_obj = sa.MetaData()
-
-user_table = sa.Table(
-    "user_account",
-    metadata_obj,
-    sa.Column('name', sa.String(30), primary_key=True),
-    sa.Column('pass_hash', sa.String)
-)
-
-credentials_table = sa.Table(
-    "credentials",
-    metadata_obj,
-    sa.Column("id", sa.Integer, primary_key=True),
-    sa.Column("name", sa.String),
-    sa.Column("username", sa.String),
-    sa.Column("password", sa.String),
-    sa.Column("fortress_name", sa.ForeignKey(
-        "user_account.name"), nullable=False)
-)
-
-metadata_obj.create_all(engine)
+Base = sa.orm.declarative_base()
 
 
-def add_user(name: str, pass_hash: str):
-    with engine.connect() as conn:
-        result = conn.execute(
-            sa.insert(user_table),
-            [
-                {"name": name, "pass_hash": pass_hash}
-            ]
-        )
-        conn.commit()
+class User(Base):
+    __tablename__ = "user_account"
+
+    username = sa.Column(sa.String, primary_key=True)
+    hash = sa.Column(sa.String)
+
+    credentials = sa.orm.relationship("Credential", back_populates="user")
+
+    def __repr__(self) -> str:
+        return f"User(username={self.username!r}, hash={self.hash!r})"
 
 
-def get_user_hash(name: str):
-    with engine.connect() as conn:
-        return conn.execute(sa.select(user_table.c.pass_hash).
-                            where(user_table.c.name == name))
+class Credential(Base):
+    __tablename__ = "credential"
+
+    name = sa.Column(sa.String, primary_key=True)
+    username = sa.Column(sa.String)
+    password = sa.Column(sa.String)
+    owner = sa.Column(sa.String, sa.ForeignKey("user_account.username"))
+
+    user = sa.orm.relationship("User", back_populates="credentials")
+
+    def __repr__(self) -> str:
+        return f"Credential(name={self.name!r}, username={self.username!r}, password={self.password!r}, owner={self.owner!r})"
 
 
-def add_credentials(name: str, username: str, password: str, fortress_name: str):
-    with engine.connect() as conn:
-        result = conn.execute(
-            sa.insert(credentials_table),
-            [
-                {
-                    "name": name,
-                    "username": username,
-                    "password": password,
-                    "fortress_name": fortress_name
-                }
-            ]
-        )
-        conn.commit()
+Base.metadata.create_all(engine)
+
+def add_user(username, pass_hash):
+    user = User(username=username, hash=pass_hash)
+    
+    # TODO: use context manager to add
+    
+
+def get_user_hash(username):
+    pass
+
+
+def add_credentials(fortress_user: str, name: str, username: str, password: str):
+    pass
 
 
 def get_credentials(name: str):
-    with engine.connect() as conn:
-        return conn.execute(sa.select(credentials_table).
-                            where(credentials_table.c.fortress_name == name))
+    pass
 
 
-def update_credentials(fortress_name: str, new_password: str):
-    with engine.connect() as conn:
-        conn.execute(
-            sa.update(credentials_table).where(user_table.c.fortress_name == fortress_name).
-            values(password=new_password)
-        )
-        conn.commit()
+def update_credentials(fortress_user: str, new_password: str): # TODO: implement checking for which credential (lol)
+    pass
 
 
-def delete_credentials(name: str):
-    with engine.connect() as conn:
-        conn.execute(
-            sa.delete(credentials_table).
-            where(credentials_table.c.name == name)
-        )
-        conn.commit()
+def delete_credentials(fortress_user: str, name: str): # TODO: implement only deleting for current user
+    pass
+
+
+if __name__ == "__main__":
+    print("This program is not meant to be run on its own!")
