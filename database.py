@@ -36,11 +36,19 @@ Base.metadata.create_all(engine)
 def add_user(username, pass_hash):
     user = User(username=username, hash=pass_hash)
     
-    # TODO: use context manager to add
+    with sa.Session(engine) as session:
+        session.add(user) # TODO: prevent repeat usernames
+        session.commit()
     
 
-def get_user_hash(username):
-    pass
+def get_user_hash(username) -> str:
+    hash = ""
+    
+    with sa.Session(engine) as session:
+        for row in session.execute(sa.select(User.hash).where(User.username == username)):
+            hash = row.hash # TODO: test!!!
+            
+    return hash
 
 
 def add_credentials(fortress_user: str, name: str, username: str, password: str):
@@ -51,11 +59,11 @@ def get_credentials(name: str):
     pass
 
 
-def update_credentials(fortress_user: str, new_password: str): # TODO: implement checking for which credential (lol)
+def update_credentials(fortress_user: str, new_password: str): 
     pass
 
 
-def delete_credentials(fortress_user: str, name: str): # TODO: implement only deleting for current user
+def delete_credentials(fortress_user: str, name: str):
     pass
 
 
