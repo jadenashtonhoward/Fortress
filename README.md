@@ -14,6 +14,8 @@ Run main.py to use!
 
 #### Remaining Tasks
 
+Change database to be in a file in database.py
+
 Display credentials (list and individual) in a more user friendly way in main.py
 
 Implement error checking for length inputs in main.py
