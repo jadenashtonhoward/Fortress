@@ -25,4 +25,5 @@ Implement error checking for repeat names of users in auth.py
 ## Possible Extensions
 
 Add an option to sign in via face authentication instead of a password
+
 Add more options for password generation
