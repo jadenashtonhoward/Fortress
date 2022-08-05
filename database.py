@@ -1,8 +1,12 @@
 import sqlalchemy as sa
+import sqlalchemy.orm as orm
+
+# TODO: encrypt passwords when inserting, decrypt when selecting
+from cryptography.fernet import Fernet
 
 engine = sa.create_engine("sqlite+pysqlite:///:memory", future=True)
 
-Base = sa.orm.declarative_base()
+Base = orm.declarative_base()
 
 
 class User(Base):
@@ -11,7 +15,7 @@ class User(Base):
     username = sa.Column(sa.String, primary_key=True)
     hash = sa.Column(sa.String)
 
-    credentials = sa.orm.relationship("Credential", back_populates="user")
+    credentials = orm.relationship("Credential", back_populates="user")
 
     def __repr__(self) -> str:
         return f"User(username={self.username!r}, hash={self.hash!r})"
@@ -25,7 +29,7 @@ class Credential(Base):
     password = sa.Column(sa.String)
     owner = sa.Column(sa.String, sa.ForeignKey("user_account.username"))
 
-    user = sa.orm.relationship("User", back_populates="credentials")
+    user = orm.relationship("User", back_populates="credentials")
 
     def __repr__(self) -> str:
         return f"Credential(name={self.name!r}, username={self.username!r}, password={self.password!r}, owner={self.owner!r})"
@@ -33,38 +37,80 @@ class Credential(Base):
 
 Base.metadata.create_all(engine)
 
-def add_user(username, pass_hash):
+
+def add_user(username, pass_hash) -> None:
     user = User(username=username, hash=pass_hash)
-    
-    with sa.Session(engine) as session:
-        session.add(user) # TODO: prevent repeat usernames
+
+    with orm.Session(engine) as session:
+        session.add(user)
         session.commit()
-    
+
 
 def get_user_hash(username) -> str:
     hash = ""
-    
-    with sa.Session(engine) as session:
+
+    with orm.Session(engine) as session:
         for row in session.execute(sa.select(User.hash).where(User.username == username)):
-            hash = row.hash # TODO: test!!!
-            
+            hash = row.hash
+
     return hash
 
 
-def add_credentials(fortress_user: str, name: str, username: str, password: str):
-    pass
+def add_credentials(name: str, username: str, password: str, owner: str, owner_password: str) -> None:
+    credential = Credential(name=name, username=username,
+                            password=password, owner=owner)
+
+    with orm.Session(engine) as session:
+        session.add(credential)
+        session.commit()
 
 
-def get_credentials(name: str):
-    pass
+def fetch_credentials_list(owner: str) -> list:
+    creds = []
+
+    with orm.Session(engine) as session:
+        for row in session.execute(
+            sa.select(Credential.name).where(Credential.owner == owner)
+        ):
+            creds.append(row)
+
+    return creds
 
 
-def update_credentials(fortress_user: str, new_password: str): 
-    pass
+def fetch_credential(name: str, owner: str, owner_password: str) -> str:
+    cred = ""
+
+    with orm.Session(engine) as session:
+        for row in session.execute(sa.select(Credential).
+                                   where(Credential.name == name and
+                                         Credential.owner == owner)):
+            cred = row
+
+    return cred
 
 
-def delete_credentials(fortress_user: str, name: str):
-    pass
+def update_credentials(name: str, new_password: str, owner: str, owner_password: str):
+
+    with orm.Session(engine) as session:
+        for row in session.execute(sa.select(Credential).
+                                   where(Credential.name == name and
+                                         Credential.owner == owner)):
+            row[0].password = new_password
+
+        session.commit()
+
+
+def delete_credentials(name: str, owner: str, owner_password: str):
+    from auth import hash_password
+
+    if hash_password(owner_password) == get_user_hash(owner):
+        with orm.Session(engine) as session:
+            for row in session.execute(sa.select(Credential).where(
+                    Credential.name == name and Credential.owner == owner)):
+
+                session.delete(row[0])
+
+            session.commit()
 
 
 if __name__ == "__main__":

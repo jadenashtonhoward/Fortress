@@ -3,15 +3,19 @@ import hashlib
 from database import add_user, get_user_hash
 
 
+def hash_password(password: str):
+    return hashlib.sha3_256(password.encode("utf-8")).hexdigest()
+
+
 def sign_in() -> tuple:
     username = input("Please enter your username. >> ")
-    pass_hash = hashlib.sha3_256(
-        input("Please enter your password. >> ").encode("utf-8")).hexdigest()
+    password = input("Please enter your password. >> ")
+    pass_hash = hash_password(password)
 
     if pass_hash == get_user_hash(username):
-        return True, username
+        return True, username, password
     else:
-        return False, ""
+        return False, "", ""
 
 
 def sign_up() -> tuple:
@@ -28,11 +32,11 @@ def sign_up() -> tuple:
         else:
             print("Your passwords do not match!")
 
-    pass_hash = hashlib.sha3_256(f"{password}".encode("utf-8")).hexdigest()
+    pass_hash = hash_password(password)
 
     add_user(username, pass_hash)
 
-    return True, username
+    return True, username, password
 
 
 if __name__ == "__main__":

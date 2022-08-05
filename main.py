@@ -28,7 +28,7 @@ def menu(message: str, *options: str) -> str:
 
 def main():
     authenticated = False
-    user = ""
+    owner = ""
 
     print("""
     d88888b  .d88b.  d8888b. d888888b d8888b. d88888b .d8888. .d8888. 
@@ -45,47 +45,52 @@ def main():
         option = menu("Welcome to Fortress!", "Sign In", "Sign Up")
 
         if option == "Sign In":
-            authenticated, user = sign_in()
+            authenticated, owner, owner_password = sign_in()
         elif option == "Sign Up":
-            authenticated, user = sign_up()
+            authenticated, owner, owner_password = sign_up()
 
-    option = menu("Welcome to your fort!", "Add", "Fetch", "Update", "Delete")
-    # TODO: display list (on multiple lines)
-    db.fetch_credentials_list(username)
+    while True:
+        option = menu("Welcome to your fort!", "Add",
+                      "Fetch", "Update", "Delete")
 
-    if option == "Add":
+        if option == "Add":
 
-        name = input("What is this credential for? >> ")
-        username = input("What will your username be? >> ")
-        # TODO: error checking
-        length = int(input("How long do you want your password to be? >> "))
+            name = input("What is this credential for? >> ")
+            username = input("What will your username be? >> ")
+            # TODO: error checking
+            length = int(
+                input("How long do you want your password to be? >> "))
 
-        password = generate(length)
+            password = generate(length)
 
-        print(f"Your password for {name} is {password}")
+            print(f"Your password for {name} is {password}")
 
-        db.add_credentials(user, name, username, password)
+            db.add_credentials(name, username, password, owner, owner_password)
 
-    elif option == "Fetch":
+        elif option == "Fetch":
 
-        name = input("Which credential would you like to view? >> ")
-        print(db.fetch_credential(name, username))
+            # TODO: display all credentials
+            print(db.fetch_credentials_list(owner))
+            name = input("Which credential would you like to view? >> ")
+            print(db.fetch_credential(name, owner, owner_password))
 
-    elif option == "Update":
+        elif option == "Update":
 
-        name = input("Which credential would you like to update? >> ")
-        length = int(input("How long do you want your password to be? >> "))
-        password = generate(length)
-        print(f"Your new password for {name} is {password}")
-        db.update_credentials(name, password, username)
+            name = input("Which credential would you like to update? >> ")
+            length = int(
+                input("How long do you want your password to be? >> "))
+            password = generate(length)
+            print(f"Your new password for {name} is {password}")
+            db.update_credentials(name, password, owner, owner_password)
 
-    elif option == "Delete":
+        elif option == "Delete":
 
-        name = input("Which credential would you like to delete? >> ")
-        print(f"You are attempting to delete your credential: {name}")
-        password = input("Please input your Fortress password to confirm. >> ")
+            name = input("Which credential would you like to delete? >> ")
+            print(f"You are attempting to delete your credential: {name}")
+            owner_password = input(
+                "Please input your Fortress password to confirm. >> ")
 
-        db.delete_credentials(name, username, password)
+            db.delete_credentials(name, owner, owner_password)
 
 
 if __name__ == "__main__":
