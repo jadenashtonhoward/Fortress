@@ -5,7 +5,7 @@ A Python CLI tool for securely generating and storing secure passwords
 
 # Installation
 
-<git clone put_url_here>
+`git clone https://github.com/jadenashtonhoward/Fortress.git`
   
 Run main.py to use!
 
