@@ -1,4 +1,4 @@
 
 # Fortress
 
-A Python CLI tool for generating and storing secure passwords
+A Python CLI tool for securely generating and storing secure passwords
