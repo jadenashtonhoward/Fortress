@@ -3,14 +3,14 @@
 
 A Python CLI tool for securely generating and storing secure passwords
 
-# Installation
+## Installation
 
 Install with:
 `git clone https://github.com/jadenashtonhoward/Fortress.git`
   
 Run main.py to use!
 
-## Remaining Tasks
+#### Remaining Tasks
 
 Display credentials (list and individual) in a more user friendly way in main.py
 
@@ -22,7 +22,7 @@ Prevent repeat names of credentials in database.py
 
 Implement error checking for repeat names of users in auth.py
 
-## Possible Extensions
+#### Possible Extensions
 
 Add an option to sign in via face authentication instead of a password
 
