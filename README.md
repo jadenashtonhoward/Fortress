@@ -18,8 +18,6 @@ Change database to be in a file in database.py
 
 Display credentials (list and individual) in a more user friendly way in main.py
 
-Implement error checking for length inputs in main.py
-
 Encrypt and decrypt passwords being insert or retreived from the database in database.py
 
 Prevent repeat names of credentials in database.py
