@@ -3,6 +3,12 @@
 
 A Python CLI tool for securely generating and storing secure passwords
 
+# Installation
+
+<git clone put_url_here>
+  
+Run main.py to use!
+
 ## Remaining Tasks
 
 Display credentials (list and individual) in a more user friendly way in main.py
