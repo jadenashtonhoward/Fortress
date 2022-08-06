@@ -55,15 +55,16 @@ Base.metadata.create_all(engine)
 # region USER FUNCTIONS
 
 
-def add_user(username: str, hash: str) -> None:
+def add_user(username: str, password: str) -> None:
     """Adds a user to the database
 
     Args:
         username (str): the user's username
-        hash (str): the hash of the user's password
+        password (str): the user's password
     """
 
-    user = User(username=username, hash=hash, salt=urandom(16))
+    user = User(username=username, hash=security.create_hash(
+        password), salt=urandom(16))
 
     with Session.begin() as session:
         session.add(user)
@@ -244,7 +245,7 @@ def update_credential(name: str, owner: str, owner_password: str) -> str:
 
 def run_tests() -> str:
     print(f"{security.create_hash('test')=}")
-    add_user("test", security.create_hash('test'))
+    add_user("test", "test")
     print(f"{get_user_hash('test')=}")
     print(f"{get_user_salt('test')=}")
 
