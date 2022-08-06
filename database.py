@@ -1,9 +1,6 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
-# TODO: encrypt passwords when inserting, decrypt when selecting
-from cryptography.fernet import Fernet
-
 engine = sa.create_engine("sqlite+pysqlite:///:memory", future=True)
 
 Base = orm.declarative_base()
@@ -14,6 +11,7 @@ class User(Base):
 
     username = sa.Column(sa.String, primary_key=True)
     hash = sa.Column(sa.String)
+    salt = sa.Column(sa.String)
 
     credentials = orm.relationship("Credential", back_populates="user")
 
@@ -37,9 +35,11 @@ class Credential(Base):
 
 Base.metadata.create_all(engine)
 
+# database functions
+
 
 def add_user(username, pass_hash) -> None:
-    user = User(username=username, hash=pass_hash)
+    user = User(username=username, hash=pass_hash, salt=urandom(16))
 
     with orm.Session(engine) as session:
         session.add(user)
@@ -56,9 +56,20 @@ def get_user_hash(username) -> str:
     return hash
 
 
+def get_user_salt(username) -> bytes:
+    salt = ""
+
+    with orm.Session(engine) as session:
+        for row in session.execute(sa.select(User.salt).where(User.username == username)):
+            salt = row.salt
+
+    return salt
+
+
 def add_credentials(name: str, username: str, password: str, owner: str, owner_password: str) -> None:
+
     credential = Credential(name=name, username=username,
-                            password=password, owner=owner)
+                            password=encrypt_password(password, owner, owner_password), owner=owner)
 
     with orm.Session(engine) as session:
         session.add(credential)
@@ -77,14 +88,16 @@ def fetch_credentials_list(owner: str) -> list:
     return creds
 
 
-def fetch_credential(name: str, owner: str, owner_password: str) -> str:
-    cred = ""
+def fetch_credential(name: str, owner: str, owner_password: str) -> tuple:
+
+    cred = ()
 
     with orm.Session(engine) as session:
         for row in session.execute(sa.select(Credential).
                                    where(Credential.name == name and
                                          Credential.owner == owner)):
-            cred = row
+            cred = row[0].name, decrypt_password(
+                row[0].password, owner, owner_password)
 
     return cred
 
@@ -95,7 +108,8 @@ def update_credentials(name: str, new_password: str, owner: str, owner_password:
         for row in session.execute(sa.select(Credential).
                                    where(Credential.name == name and
                                          Credential.owner == owner)):
-            row[0].password = new_password
+            row[0].password = encrypt_password(
+                new_password, owner, owner_password)
 
         session.commit()
 

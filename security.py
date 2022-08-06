@@ -1,6 +1,11 @@
 import hashlib
+import base64
 
 from database import add_user, get_user_hash
+
+from os import urandom
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
 
 def hash_password(password: str):
@@ -37,6 +42,36 @@ def sign_up() -> tuple:
     add_user(username, pass_hash)
 
     return True, username, password
+
+
+# encryption functions
+
+def create_key(owner: str, owner_password: str) -> bytes:
+    kdf = Scrypt(
+        salt=get_user_salt(owner),
+        length=32,
+        n=2**20,
+        r=8,
+        p=1,
+    )
+
+    return base64.urlsafe_b64encode(kdf.derive(owner_password.encode("utf-8")))
+
+
+def encrypt_password(password: str, owner: str, owner_password: str) -> str:
+    key = create_key(owner, owner_password)
+
+    f = Fernet(key)
+
+    return str(f.encrypt(password.encode("utf-8")))
+
+
+def decrypt_password(password: str, owner: str, owner_password: str) -> str:
+    key = create_key(owner, owner_password)
+
+    f = Fernet(key)
+
+    return str(f.decrypt(password.encode("utf-8")))
 
 
 if __name__ == "__main__":

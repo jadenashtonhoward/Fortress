@@ -2,7 +2,7 @@ import database as db
 
 from sys import exit
 from generator import generate
-from auth import sign_up, sign_in
+from security import sign_up, sign_in
 
 
 def menu(message: str, *options: str) -> str:
@@ -57,11 +57,14 @@ def main():
 
             name = input("What is this credential for? >> ")
             username = input("What will your username be? >> ")
-            # TODO: error checking
-            length = int(
-                input("How long do you want your password to be? >> "))
 
-            password = generate(length)
+            length = ""
+
+            while not length.isdigit():
+                length = input(
+                    "How many characters should your password have? >> ")
+
+            password = generate(int(length))
 
             print(f"Your password for {name} is {password}")
 
@@ -77,9 +80,14 @@ def main():
         elif option == "Update":
 
             name = input("Which credential would you like to update? >> ")
-            length = int(
-                input("How long do you want your password to be? >> "))
-            password = generate(length)
+
+            length = ""
+
+            while not length.isdigit():
+                length = input(
+                    "How many characters should your password have? >> ")
+
+            password = generate(int(length))
             print(f"Your new password for {name} is {password}")
             db.update_credentials(name, password, owner, owner_password)
 
