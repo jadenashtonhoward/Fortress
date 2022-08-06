@@ -36,7 +36,8 @@ class User(Base):
 class Credential(Base):
     __tablename__ = "credential"
 
-    name = sa.Column(sa.String(32), primary_key=True)
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String(32))
     username = sa.Column(sa.String(32))
     password = sa.Column(sa.String)
     owner = sa.Column(sa.String, sa.ForeignKey("user_account.username"))
@@ -72,10 +73,13 @@ def delete_user(username: str) -> None:
     """Deletes a user from the database
 
     Args:
-        username (str): the username of the desired user
+        username (str): the username of the User that will be deleted
     """
 
-    pass  # TODO: implement deleting of users
+    with Session.begin() as session:
+        user = session.get(User, username)
+
+        session.delete(user)
 
 
 def get_user_hash(username: str) -> str:
@@ -130,7 +134,7 @@ def add_credential(name: str, username: str, owner: str, owner_password: str) ->
         owner_password (str): the password of the User that owns the credential
 
     Returns:
-        str: the generated password
+        str: the password stored in the credential
     """
 
     password = generate()
@@ -194,6 +198,45 @@ def get_credential(name: str, owner: str, owner_password: str) -> str:
 
     return f"Your password for {name} is {password}"
 
+
+def delete_credential(name: str, owner: str) -> None:
+    """Selects a credential by its name and owner and deletes it
+
+    Args:
+        name (str): the name of the credential
+        owner (str): the username of the User that owns the credential
+    """
+
+    with Session.begin() as session:
+        user = session.get(User, owner)
+
+        user.credentials.remove(
+            session.scalars(sa.select(Credential).where(
+                Credential.name == name).where(Credential.owner == owner)).one()
+        )
+
+
+def update_credential(name: str, owner: str, owner_password: str) -> str:
+    """Selects a credential by its name and owner and generates a new password for it
+
+    Args:
+        name (str): the name of the credential
+        owner (str): the username of the User that owns the credential
+        owner_password (str): the password of the User that owns the credential
+
+    Returns:
+        str: the new password stored in the credential
+    """
+
+    with Session() as session:
+        username = session.scalars(
+            sa.select(Credential.username).where(
+                Credential.name == name).where(Credential.owner == owner)
+        ).one()
+
+    delete_credential(name, owner)
+    return add_credential(name, username, owner, owner_password)
+
 # endregion
 
 # region TESTING FUNCTIONS
@@ -213,6 +256,11 @@ def run_tests() -> str:
     print(f"{get_credential('test', 'test', 'test')=}")
     print(f"{get_credential('test1', 'test', 'test')=}")
     print(f"{get_credential('test2', 'test', 'test')=}")
+
+    delete_credential('test2', 'test')
+
+    print(f"{update_credential('test1', 'test', 'test')=}")
+    print(f"{get_credential('test1', 'test', 'test')=}")
 
     delete_user("test")
 
