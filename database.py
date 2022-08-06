@@ -55,19 +55,27 @@ Base.metadata.create_all(engine)
 # region USER FUNCTIONS
 
 
-def add_user(username: str, password: str) -> None:
+def add_user(username: str, password: str) -> bool:
     """Adds a user to the database
 
     Args:
         username (str): the user's username
         password (str): the user's password
+
+    Returns:
+        bool: True if user was added, False if not
     """
 
     user = User(username=username, hash=security.create_hash(
         password), salt=urandom(16))
 
-    with Session.begin() as session:
-        session.add(user)
+    try:
+        with Session.begin() as session:
+            session.add(user)
+
+        return True
+    except:
+        return False
 
 
 def delete_user(username: str) -> None:
@@ -99,6 +107,23 @@ def get_user_hash(username: str) -> str:
         ).one()
 
     return hash
+
+
+def compare_hash(username: str, password: str) -> bool:
+    """Compares a password's hash to a user's stored hash
+
+    Args:
+        username (str): the User's username
+        password (str): the password entered by the User
+
+    Returns:
+        bool: True if the password matches the stored hash, False if not
+    """
+
+    if security.create_hash(password) == get_user_hash(username):
+        return True
+    else:
+        return False
 
 
 def get_user_salt(username: str) -> bytes:
@@ -176,6 +201,19 @@ def get_all_credentials(owner: str) -> List[str]:
     return credentials
 
 
+def get_credentials_size(owner: str) -> int:
+    """Retreives the amount of credentials a User has
+
+    Args:
+        owner (str): the username of the User being checked
+
+    Returns:
+        int: the amount of credentials belonging to the User
+    """
+
+    return len(get_all_credentials(owner))
+
+
 def get_credential(name: str, owner: str, owner_password: str) -> str:
     """Retrieves a user's credential by its name
 
@@ -184,10 +222,13 @@ def get_credential(name: str, owner: str, owner_password: str) -> str:
         owner (str): the username of the User that owns the credential
 
     Returns:
-        str: a string containing either the name and password, or an error message
+        str: a string containing the credential name, username, and password
     """
 
     with Session() as session:
+        username = session.scalars(sa.select(Credential.username).where(
+            Credential.name == name and Credential.owner == owner)).one()
+
         password = session.scalars(sa.select(Credential.password).where(
             Credential.name == name and Credential.owner == owner)).one()
 
@@ -197,7 +238,7 @@ def get_credential(name: str, owner: str, owner_password: str) -> str:
         get_user_salt(owner)
     )
 
-    return f"Your password for {name} is {password}"
+    return f"Your username for {name} is {username} and your password is {password}"
 
 
 def delete_credential(name: str, owner: str) -> None:
