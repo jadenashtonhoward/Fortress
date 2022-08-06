@@ -1,131 +1,223 @@
+import security
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
-engine = sa.create_engine("sqlite+pysqlite:///:memory", future=True)
+from os import urandom
+from typing import List
+from generator import generate
+
+engine = sa.create_engine("sqlite+pysqlite:///database.db", future=True)
+
+Session = orm.sessionmaker(engine, future=True)
 
 Base = orm.declarative_base()
+
+# region CLASSES
 
 
 class User(Base):
     __tablename__ = "user_account"
 
-    username = sa.Column(sa.String, primary_key=True)
+    username = sa.Column(sa.String(32), primary_key=True)
     hash = sa.Column(sa.String)
     salt = sa.Column(sa.String)
 
-    credentials = orm.relationship("Credential", back_populates="user")
+    credentials = orm.relationship(
+        "Credential",
+        back_populates="user",
+        order_by="Credential.name",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
-        return f"User(username={self.username!r}, hash={self.hash!r})"
+        return f"User(username={self.username!r}, hash={self.hash!r}, salt={self.salt!r})"
 
 
 class Credential(Base):
     __tablename__ = "credential"
 
-    name = sa.Column(sa.String, primary_key=True)
-    username = sa.Column(sa.String)
+    name = sa.Column(sa.String(32), primary_key=True)
+    username = sa.Column(sa.String(32))
     password = sa.Column(sa.String)
     owner = sa.Column(sa.String, sa.ForeignKey("user_account.username"))
 
     user = orm.relationship("User", back_populates="credentials")
 
     def __repr__(self) -> str:
-        return f"Credential(name={self.name!r}, username={self.username!r}, password={self.password!r}, owner={self.owner!r})"
+        return f"Credential(name={self.name!r}, username={self.username!r}, password={self.password!r})"
 
 
 Base.metadata.create_all(engine)
 
-# database functions
+# endregion
+
+# region USER FUNCTIONS
 
 
-def add_user(username, pass_hash) -> None:
-    user = User(username=username, hash=pass_hash, salt=urandom(16))
+def add_user(username: str, hash: str) -> None:
+    """Adds a user to the database
 
-    with orm.Session(engine) as session:
+    Args:
+        username (str): the user's username
+        hash (str): the hash of the user's password
+    """
+
+    user = User(username=username, hash=hash, salt=urandom(16))
+
+    with Session.begin() as session:
         session.add(user)
-        session.commit()
 
 
-def get_user_hash(username) -> str:
-    hash = ""
+def delete_user(username: str) -> None:
+    """Deletes a user from the database
 
-    with orm.Session(engine) as session:
-        for row in session.execute(sa.select(User.hash).where(User.username == username)):
-            hash = row.hash
+    Args:
+        username (str): the username of the desired user
+    """
+
+    pass  # TODO: implement deleting of users
+
+
+def get_user_hash(username: str) -> str:
+    """Retreives a user's password hash from the database
+
+    Args:
+        username (str): the user's username
+
+    Returns:
+        str: the hash of the user's password
+    """
+
+    with Session() as session:
+        hash = session.scalars(
+            sa.select(User.hash).where(User.username == username)
+        ).one()
 
     return hash
 
 
-def get_user_salt(username) -> bytes:
+def get_user_salt(username: str) -> bytes:
+    """Retreives a user's salt from the database
+
+    Args:
+        username (str): the user's username
+
+    Returns:
+        str: the user's salt
+    """
+
     salt = ""
 
-    with orm.Session(engine) as session:
-        for row in session.execute(sa.select(User.salt).where(User.username == username)):
-            salt = row.salt
+    with Session() as session:
+        salt = session.scalars(
+            sa.select(User.salt).where(User.username == username)
+        ).one()
 
     return salt
 
 
-def add_credentials(name: str, username: str, password: str, owner: str, owner_password: str) -> None:
+# endregion
 
-    credential = Credential(name=name, username=username,
-                            password=encrypt_password(password, owner, owner_password), owner=owner)
+# region CREDENTIAL FUNCTIONS
 
-    with orm.Session(engine) as session:
-        session.add(credential)
-        session.commit()
+def add_credential(name: str, username: str, owner: str, owner_password: str) -> str:
+    """Adds a credential to the database
 
+    Args:
+        name (str): the credential's name
+        username (str): the username to be stored
+        owner (str): the username of the User that owns the credential
+        owner_password (str): the password of the User that owns the credential
 
-def fetch_credentials_list(owner: str) -> list:
-    creds = []
+    Returns:
+        str: the generated password
+    """
 
-    with orm.Session(engine) as session:
-        for row in session.execute(
-            sa.select(Credential.name).where(Credential.owner == owner)
-        ):
-            creds.append(row)
+    password = generate()
 
-    return creds
+    with Session.begin() as session:
+        user = session.scalars(
+            sa.select(User).where(User.username == owner)
+        ).one()
 
+        user.credentials.append(
+            Credential(
+                name=name,
+                username=username,
+                password=security.encrypt(
+                    password, owner_password, get_user_salt(owner)
+                ),
+                owner=owner
+            )
+        )
 
-def fetch_credential(name: str, owner: str, owner_password: str) -> tuple:
-
-    cred = ()
-
-    with orm.Session(engine) as session:
-        for row in session.execute(sa.select(Credential).
-                                   where(Credential.name == name and
-                                         Credential.owner == owner)):
-            cred = row[0].name, decrypt_password(
-                row[0].password, owner, owner_password)
-
-    return cred
-
-
-def update_credentials(name: str, new_password: str, owner: str, owner_password: str):
-
-    with orm.Session(engine) as session:
-        for row in session.execute(sa.select(Credential).
-                                   where(Credential.name == name and
-                                         Credential.owner == owner)):
-            row[0].password = encrypt_password(
-                new_password, owner, owner_password)
-
-        session.commit()
+    return password
 
 
-def delete_credentials(name: str, owner: str, owner_password: str):
-    from auth import hash_password
+def get_all_credentials(owner: str) -> List[str]:
+    """Retrieves all of a user's credential names
 
-    if hash_password(owner_password) == get_user_hash(owner):
-        with orm.Session(engine) as session:
-            for row in session.execute(sa.select(Credential).where(
-                    Credential.name == name and Credential.owner == owner)):
+    Args:
+        owner (str): the username of the credential's owner
 
-                session.delete(row[0])
+    Returns:
+        List[str]: a list of credential names
+    """
 
-            session.commit()
+    with Session() as session:
+        credentials = session.scalars(sa.select(Credential).join(
+            Credential.user).where(User.username == owner)).all()
 
+    return credentials
+
+
+def get_credential(name: str, owner: str, owner_password: str) -> str:
+    """Retrieves a user's credential by its name
+
+    Args:
+        name (str): the name of the credential
+        owner (str): the username of the User that owns the credential
+
+    Returns:
+        str: a string containing either the name and password, or an error message
+    """
+
+    with Session() as session:
+        password = session.scalars(sa.select(Credential.password).where(
+            Credential.name == name and Credential.owner == owner)).one()
+
+    password = security.decrypt(
+        password,
+        owner_password,
+        get_user_salt(owner)
+    )
+
+    return f"Your password for {name} is {password}"
+
+# endregion
+
+# region TESTING FUNCTIONS
+
+
+def run_tests() -> str:
+    print(f"{security.create_hash('test')=}")
+    add_user("test", security.create_hash('test'))
+    print(f"{get_user_hash('test')=}")
+    print(f"{get_user_salt('test')=}")
+
+    print(f"{add_credential('test', 'test', 'test', 'test')=}")
+    print(f"{add_credential('test1', 'test', 'test', 'test')=}")
+    print(f"{add_credential('test2', 'test', 'test', 'test')=}")
+
+    print(f"{get_all_credentials('test')=}")
+    print(f"{get_credential('test', 'test', 'test')=}")
+    print(f"{get_credential('test1', 'test', 'test')=}")
+    print(f"{get_credential('test2', 'test', 'test')=}")
+
+    delete_user("test")
+
+
+# endregion
 
 if __name__ == "__main__":
-    print("This program is not meant to be run on its own!")
+    print(run_tests())
