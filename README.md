@@ -9,3 +9,7 @@ Install with:
 `git clone https://github.com/jadenashtonhoward/Fortress.git`
   
 Run main.py to use!
+
+## Issues
+
+Repeat names will crash the program
