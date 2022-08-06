@@ -1,96 +1,132 @@
 import database as db
 
 from sys import exit
-from generator import generate
-from auth import sign_up, sign_in
+from typing import Tuple, List
 
 
-def menu(message: str, *options: str) -> str:
-    while True:
-        print(message)
-        print("Here are your options:")
+def ensure_credentials(owner: str) -> Tuple[bool, List[str]]:
+    """Ensures that the user has credentials before trying to work on them
+    """
 
-        for i in range(0, len(options)):
-            print(f"\t{options[i]}")
+    credentials = db.get_all_credentials(owner)
 
-        print("\tExit")
+    if len(credentials) == 0:
+        return False, credentials
+    else:
+        return True, credentials
 
-        option = input("Please select an operation. >> ")
 
-        if option == "Exit":
-            exit()
-        elif option in options:
-            print()
-            return option
+def display_credentials(owner: str) -> bool:
+    """If the user has credentials, displays them
 
-        print("Please select a valid operation! Capitalization matters.\n")
+    Args:
+        owner (str): the username of the User
+    """
+
+    has_credentials, credentials = ensure_credentials(owner)
+
+    if has_credentials:
+        for i in range(0, len(credentials)):
+            if i % 3 == 0:
+                print()
+            print(credentials[i].name, end=" ")
+
+        print()
+
+        return True
+    else:
+        print("You don't have any credentials!")
+        return False
 
 
 def main():
-    authenticated = False
-    owner = ""
 
     print("""
-    d88888b  .d88b.  d8888b. d888888b d8888b. d88888b .d8888. .d8888. 
-    88'     .8P  Y8. 88  `8D `~~88~~' 88  `8D 88'     88'  YP 88'  YP 
-    88ooo   88    88 88oobY'    88    88oobY' 88ooooo `8bo.   `8bo.   
-    88~~~   88    88 88`8b      88    88`8b   88~~~~~   `Y8b.   `Y8b. 
-    88      `8b  d8' 88 `88.    88    88 `88. 88.     db   8D db   8D 
-    YP       `Y88P'  88   YD    YP    88   YD Y88888P `8888Y' `8888Y' 
-          """)
+        d88888b  .d88b.  d8888b. d888888b d8888b. d88888b .d8888. .d8888. 
+        88'     .8P  Y8. 88  `8D `~~88~~' 88  `8D 88'     88'  YP 88'  YP 
+        88ooo   88    88 88oobY'    88    88oobY' 88ooooo `8bo.   `8bo.   
+        88~~~   88    88 88`8b      88    88`8b   88~~~~~   `Y8b.   `Y8b. 
+        88      `8b  d8' 88 `88.    88    88 `88. 88.     db   8D db   8D 
+        YP       `Y88P'  88   YD    YP    88   YD Y88888P `8888Y' `8888Y' 
+    """)
 
-    print("")
+    print("\nWelcome to Fortress!")
+
+    owner = ""
+    owner_password = ""
+
+    authenticated = False
 
     while not authenticated:
-        option = menu("Welcome to Fortress!", "Sign In", "Sign Up")
+        option = ""
 
-        if option == "Sign In":
-            authenticated, owner, owner_password = sign_in()
-        elif option == "Sign Up":
-            authenticated, owner, owner_password = sign_up()
+        while option not in ("signin", "signup"):
+            option = input("Would you like to SignIn or SignUp? >> ").lower()
+
+        owner = input("Username >> ")
+        owner_password = input("Password >> ")
+
+        if option == "signin":
+            authenticated = db.compare_hash(owner, owner_password)
+        elif option == "signup":
+            authenticated = db.add_user(owner, owner_password)
+        else:
+            print("Invalid option, try again!")
+
+        print()
+
+    print("Welcome to your Fort!")
+    print()
 
     while True:
-        option = menu("Welcome to your fort!", "Add",
-                      "Fetch", "Update", "Delete")
+        option = ""
 
-        if option == "Add":
+        while True:
+            option = input(
+                "Would you like to Add, Get, Update, Delete, or Exit? >> ").lower()
 
-            name = input("What is this credential for? >> ")
-            username = input("What will your username be? >> ")
-            # TODO: error checking
-            length = int(
-                input("How long do you want your password to be? >> "))
+            if option in ("add", "get", "update", "delete", "exit"):
+                break
+            else:
+                print("Invalid option, try again!")
 
-            password = generate(length)
+        print()
 
-            print(f"Your password for {name} is {password}")
+        if option == "add":
+            name = input("What will this credential be called? >> ")
+            username = input("What is your username for this credential? >> ")
 
-            db.add_credentials(name, username, password, owner, owner_password)
+            print(
+                f"Your password for {name} is {db.add_credential(name, username, owner, owner_password)}")
 
-        elif option == "Fetch":
+        elif option == "get":
+            if not display_credentials(owner):
+                continue
 
-            # TODO: display all credentials
-            print(db.fetch_credentials_list(owner))
             name = input("Which credential would you like to view? >> ")
-            print(db.fetch_credential(name, owner, owner_password))
 
-        elif option == "Update":
+            print(db.get_credential(name, owner, owner_password))
 
-            name = input("Which credential would you like to update? >> ")
-            length = int(
-                input("How long do you want your password to be? >> "))
-            password = generate(length)
-            print(f"Your new password for {name} is {password}")
-            db.update_credentials(name, password, owner, owner_password)
+        elif option == "update":
+            if not display_credentials(owner):
+                continue
 
-        elif option == "Delete":
+            name = input("What credential should be updated? >> ")
 
-            name = input("Which credential would you like to delete? >> ")
-            print(f"You are attempting to delete your credential: {name}")
-            owner_password = input(
-                "Please input your Fortress password to confirm. >> ")
+            db.update_credential(name, owner, owner_password)
 
-            db.delete_credentials(name, owner, owner_password)
+        elif option == "delete":
+            if not display_credentials(owner):
+                continue
+
+            name = input("Which credential should be deleted? >> ")
+
+            db.delete_credential(name, owner)
+
+        elif option == "exit":
+            exit()
+
+        print()
 
 
 if __name__ == "__main__":
