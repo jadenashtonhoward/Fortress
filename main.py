@@ -70,8 +70,9 @@ def main():
             authenticated = db.compare_hash(owner, owner_password)
         elif option == "signup":
             authenticated = db.add_user(owner, owner_password)
-        else:
-            print("Invalid option, try again!")
+
+            if not authenticated:
+                print("An account with that username already exists!")
 
         print()
 
