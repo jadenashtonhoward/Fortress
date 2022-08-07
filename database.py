@@ -166,6 +166,16 @@ def add_credential(name: str, username: str, owner: str, owner_password: str) ->
     password = generate()
 
     with Session.begin() as session:
+        try:
+            password = session.scalars(
+                sa.select(Credential.password).where(Credential.name ==
+                                                     name and Credential.owner == owner)
+            ).one()
+
+            return f"{password}, but that credential already existed! If you would like to change it, try using Update."
+        except:
+            pass
+
         user = session.scalars(
             sa.select(User).where(User.username == owner)
         ).one()
